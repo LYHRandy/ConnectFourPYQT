@@ -1,7 +1,9 @@
-import numpy as np
-
-from random import randint
 from copy import deepcopy
+from random import randint
+
+import numpy as np
+from numpy.core.numeric import False_
+
 
 class Game:
     mat = None  # this represents the board matrix
@@ -20,11 +22,12 @@ def longest_chain(game, turn):
             # check the bottom n chips
             chain2 = check_chain(game, turn, (x, y), (1, 0))
             # check the diagonal-top-right n chips
-            chain3 = check_chain(game, turn, (x, y), (-1, 1))
+            chain3 = check_chain(game, turn, (x, y), (1, -1))
             # check the diagonal-bottom-right n chips
             chain4 = check_chain(game, turn, (x, y), (1, 1))
 
             result = max(result, chain1, chain2, chain3, chain4)
+
     return result
 
 
@@ -49,7 +52,8 @@ def check_victory(game):
     3 if it is a draw
     '''
     # look for player victory
-    if game.wins == longest_chain(game, game.turn):
+    chain = longest_chain(game,game.turn)
+    if game.wins == chain:
         return game.turn
     elif 0 in game.mat[0]:  # if the top row has empty slots, there are still valid moves
         return 0
@@ -68,23 +72,84 @@ def check_move(game, col, pop=False):
     can_pop = pop and game.mat[-1, col] == game.turn
     return game.mat[0, col] == 0 or can_pop
 
+def check_player_winning(game,i):
+    #Check the score of player 1
+    player_score = longest_chain(game,1)
+    to_block = False
+    move_to_block = None
+    if player_score == 3:
+        for x, y in np.ndindex(game.mat.shape):
+            if game.mat[x, y] == 1:
+                # check the right n chips
+                chain1 = check_chain(game, 1, (x, y), (0, 1))
+                if chain1 == 3:
+                    # your either block in front of behind so is y-1 or y+3
+                    move_to_block = y+3
+                    if game.mat[x,move_to_block]!=2:
+                        to_block = True
+                        break
+                    move_to_block = y-1
+                    if game.mat[x,move_to_block]!=2:
+                        to_block = True
+                        break
+                    move_to_block = None
+                # check the bottom n chips
+                chain2 = check_chain(game, 1, (x, y), (1, 0))
+                if chain2 == 3 and check_move(game,y):
+                    to_block = True
+                    move_to_block = y
+                    break
 
-def computer_move(game, level=3):
+    return to_block, move_to_block
+
+def computer_move(game, level=3,player_move=None):
     best_move = randint(0, game.cols - 1)
-    orig_board = game.mat.copy()
     if level == 2:
+        turn_player = game.turn
+        for i in range(game.cols):
+            if check_move(game,i):
+                orig_board = game.mat.copy()
+                game.mat = apply_move(game, i)
+                if player_move:
+                    #Check if AI has a chance to win
+                    if check_victory(game)==2:
+                        best_move = i
+                        break
+                    if player_move== 0:
+                        best_move = randint(player_move,player_move+1)
+                    else:
+                        best_move = randint(player_move-1,player_move+1)
+                game.mat = orig_board
+        game.turn = turn_player
+            
+
+    if level == 3:
+        turn_player = game.turn
         for i in range(game.cols):
             if check_move(game, i):
+                orig_board = game.mat.copy()
                 game.mat = apply_move(game, i)
-                if check_victory(game) == 2:
+                to_block, move_to_block = check_player_winning(game,i)
+                if to_block and move_to_block:
+                    best_move = move_to_block
+                    break
+                game.mat = orig_board
+                game.turn ^= 3
+                game.mat = apply_move(game, i)
+                if check_victory(game) == 1:  # AI is about to lose
                     best_move = i
                     break
-    if level == 3:
+                game.mat = orig_board
+        game.turn = turn_player
+
+    if level == 4:
         best_score = 0
         for i in range(game.cols):
             if check_move(game, i):
+                orig_board = game.mat.copy()
                 game.mat = apply_move(game, i)
                 current_score = minimax(game)
+                game.mat = orig_board
                 if current_score == -game.wins:  # Ai is about to lose
                     best_move = i
                     break
@@ -92,6 +157,7 @@ def computer_move(game, level=3):
                     best_score = current_score
                     best_move = i
     game.mat = orig_board
+
     return best_move
 
 
@@ -102,22 +168,23 @@ def display_board(game):
 def menu():
     my_game = Game()
     my_game.mat = np.zeros((my_game.rows, my_game.cols))
-    my_game.mat[-3:, randint(0, my_game.cols - 1)] = 2
+    #my_game.mat[-3:, randint(0, my_game.cols - 1)] = 2
 
     level = input('AI Level (1/2/3): ')
     while level not in ('1', '2', '3'):
         level = input('AI Level (1/2/3): ')
     level = int(level)
     print('AI is running at level', level)
+    player_move = None
 
     while True:
         display_board(my_game)
         print('Player', my_game.turn, 'turn.')
         if my_game.turn == 1:
             col = int(input('Enter column: '))
+            player_move = col
         else:
-            col = computer_move(my_game, level=level)
-
+            col = computer_move(my_game, level=level,player_move=player_move)
         while not check_move(my_game, col):
             print('Invalid move.')
             col = int(input('Enter column: '))
@@ -127,7 +194,6 @@ def menu():
             break
         my_game.turn ^= 3  # toggles between 1 and 2
     display_board(my_game)
-
 
 def minimax(game, depth=4, alpha=-1_000_000, beta=1_000_000, is_max=True):
     outcome = check_victory(game)
