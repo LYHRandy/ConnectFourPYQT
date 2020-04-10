@@ -45,7 +45,7 @@ def check_chain(game, player, coords, move_coords, chain=0):
     return check_chain(game, player, (new_x, new_y), (move_x, move_y), chain + 1)
 
 
-def check_victory(game):
+def check_victory(game,mode="player"):
     '''
     0 is no winning/draw situation is present for this game
     1 if player 1 wins
@@ -54,9 +54,10 @@ def check_victory(game):
     '''
     # look for player victory
     chain = longest_chain(game,game.turn)
+    filename = "state-" + mode + ".txt" 
     if game.wins == chain:
-        if os.path.exists("state.txt"):
-            os.remove("state.txt")
+        if os.path.exists(filename):
+            os.remove(filename)
         return game.turn
     elif 0 in game.mat[0]:  # if the top row has empty slots, there are still valid moves
         return 0
@@ -64,13 +65,14 @@ def check_victory(game):
         return 3
 
 
-def apply_move(game, col, pop=False):
+def apply_move(game, col, pop=False,mode="player"):
     board = game.mat.copy()
     row = board[:, col][::-1].tolist().index(0)
     board[game.rows - row - 1, col] = game.turn
 
     # whenever apply move is called, save game state
-    with open("state.txt","w") as f:
+    filename = "state-" + mode + ".txt" 
+    with open(filename,"w") as f:
         for row in board:
             for cell_idx in range(len(row)-1):
                 print(str(row[cell_idx]),end='|',file=f)
@@ -136,6 +138,7 @@ def computer_move(game, level=3,player_move=None):
                         best_move = randint(player_move-1,player_move+1)
                 game.mat = orig_board
         game.turn = turn_player
+        game.mat = orig_board
             
 
     if level == 3:
@@ -156,6 +159,7 @@ def computer_move(game, level=3,player_move=None):
                     break
                 game.mat = orig_board
         game.turn = turn_player
+        game.mat = orig_board
 
     if level == 4:
         best_score = 0
@@ -171,7 +175,7 @@ def computer_move(game, level=3,player_move=None):
                 elif current_score > best_score:
                     best_score = current_score
                     best_move = i
-    game.mat = orig_board
+        game.mat = orig_board
 
     return best_move
 
