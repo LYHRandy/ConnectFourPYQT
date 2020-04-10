@@ -1,5 +1,6 @@
 from copy import deepcopy
 from random import randint
+import os
 
 import numpy as np
 from numpy.core.numeric import False_
@@ -11,7 +12,7 @@ class Game:
     cols = 7                # this represents the number of columns of the board
     turn = 1                # this represents whose turn it is (1 for player 1, 2 for player 2)
     wins = 4                # this represents the number of consecutive disks you need to force in order to win
-
+    game_state = None 
 
 def longest_chain(game, turn):
     result = 0
@@ -54,6 +55,8 @@ def check_victory(game):
     # look for player victory
     chain = longest_chain(game,game.turn)
     if game.wins == chain:
+        if os.path.exists("state.txt"):
+            os.remove("state.txt")
         return game.turn
     elif 0 in game.mat[0]:  # if the top row has empty slots, there are still valid moves
         return 0
@@ -65,6 +68,18 @@ def apply_move(game, col, pop=False):
     board = game.mat.copy()
     row = board[:, col][::-1].tolist().index(0)
     board[game.rows - row - 1, col] = game.turn
+
+    # whenever apply move is called, save game state
+    with open("state.txt","w") as f:
+        for row in board:
+            for cell_idx in range(len(row)-1):
+                print(str(row[cell_idx]),end='|',file=f)
+            f.write(str(row[-1]))
+            f.write("\n")
+        # store the next player' turn instead. so when load state, it rmbs is the other player's turn
+        player_turn = game.turn ^ 3
+        f.write(str(player_turn))
+        
     return board
 
 

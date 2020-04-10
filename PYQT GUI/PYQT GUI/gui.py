@@ -1,3 +1,4 @@
+import os
 import sys
 
 import numpy as np
@@ -72,15 +73,33 @@ class MainWindow(QtWidgets.QMainWindow):
         for i in range(self.game.rows):
             for j in range(self.game.cols):
                 label = QLabel_Kai(j, self)
-                label.setPixmap(self.EMPTY_PIXMAP)
-                label.resize(self.EMPTY_PIXMAP.width(), self.EMPTY_PIXMAP.height())
+                # Everytime game start, we need to render the loaded state
+                if self.game.mat[i, j] == 1:
+                        label.setPixmap(self.RED_PIXMAP)
+                elif self.game.mat[i, j] == 2:
+                    label.setPixmap(self.YELLOW_PIXMAP)
+                else:
+                    label.setPixmap(self.EMPTY_PIXMAP)
+                    label.resize(self.EMPTY_PIXMAP.width(), self.EMPTY_PIXMAP.height())
+                # label.setPixmap(self.EMPTY_PIXMAP)
+                # label.resize(self.EMPTY_PIXMAP.width(), self.EMPTY_PIXMAP.height())
                 grid.addWidget(label, i, j)
                 self.labels[i, j] = label
 
 
 if __name__ == "__main__":
     my_game = connect4.Game()
-    my_game.mat = np.zeros((my_game.rows, my_game.cols))
+    
+    # search for state file. If exist and not empty, load the state into game.mat
+    if os.path.exists("state.txt") and os.stat("state.txt").st_size != 0:
+        with open("state.txt", "r") as f:
+            list_state = f.read().splitlines()
+            my_game.turn = int(list_state.pop())
+            list_state = [row.split('|') for row in list_state]
+            my_game.mat = np.asarray(list_state,dtype=np.float64)
+    else:
+        my_game.mat = np.zeros((my_game.rows, my_game.cols))
+    #my_game.mat = np.zeros((my_game.rows, my_game.cols))
 
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow(game=my_game)
