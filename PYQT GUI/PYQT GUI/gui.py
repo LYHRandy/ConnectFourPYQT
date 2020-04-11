@@ -95,7 +95,8 @@ class MainWindow(QtWidgets.QMainWindow):
         palette.setColor(self.win.backgroundRole(), QtCore.Qt.blue)
         self.win.setPalette(palette)
 
-        self.setWindowTitle('QF205 - Connect4')
+        name_mapping = {"player":"VS Player","easy":"VS AI - Easy","medium":"VS AI - Medium","hard":"VS AI - Hard"}
+        self.setWindowTitle('QF205 - Connect4 ({})'.format(name_mapping[self.mode]))
         self.setGeometry(50, 50, self.game.cols * 50, self.game.rows * 50)
         self.setWindowIcon(QtGui.QIcon('empty.png'))
 
@@ -119,8 +120,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     label.setPixmap(self.EMPTY_PIXMAP)
                     label.resize(self.EMPTY_PIXMAP.width(), self.EMPTY_PIXMAP.height())
-                # label.setPixmap(self.EMPTY_PIXMAP)
-                # label.resize(self.EMPTY_PIXMAP.width(), self.EMPTY_PIXMAP.height())
                 grid.addWidget(label, i, j)
                 self.labels[i, j] = label
 
