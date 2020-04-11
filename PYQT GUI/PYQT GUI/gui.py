@@ -13,9 +13,9 @@ import glob
 class QLabel_Kai(QtWidgets.QLabel):
     clicked = QtCore.pyqtSignal()
 
-    def __init__(self, j, parent=None,mode="player"):
+    def __init__(self, col, parent=None):
         super().__init__(parent)
-        self.j = j
+        self.col = col
         self.parent = parent
         self.clicked.connect(self.label_clicked)
 
@@ -24,19 +24,20 @@ class QLabel_Kai(QtWidgets.QLabel):
 
     def label_clicked(self):
         if self.parent.mode == "player":
-            if connect4.check_move(self.parent.game, self.j):
-                self.parent.game.mat = connect4.apply_move(self.parent.game, self.j)
-        
+            row = self.parent.game[:, self.col][::-1].tolist().index(0)
+            if connect4.check_move(self.parent.game, self.col):
+                self.parent.game.mat = connect4.apply_move(self.parent.game, self.col)
         else:
             level_mapping = {"easy":1,"medium":2,"hard":3}
             level = level_mapping[self.parent.mode]
 
             if self.parent.game.turn == 1:
-                if connect4.check_move(self.parent.game, self.j):
-                    self.parent.game.mat = connect4.apply_move(self.parent.game, self.j)
+                if connect4.check_move(self.parent.game, self.col):
+                    self.parent.game.mat = connect4.apply_move(self.parent.game, self.col)
                     self.parent.game.turn ^= 3  # toggles between 1 and 2
-                    col = connect4.computer_move(self.parent.game, level=level,player_move=self.j)
-                    self.parent.game.mat = connect4.apply_move(self.parent.game, col,mode=self.parent.mode)
+                    col = connect4.computer_move(self.parent.game,player_move=self.col, level=level)
+                    if connect4.check_move(self.parent.game,self.col):
+                        self.parent.game.mat = connect4.apply_move(self.parent.game, col,mode=self.parent.mode)
                     self.parent.game.turn ^= 3  # toggles between 1 and 2
                 
             
@@ -47,16 +48,34 @@ class QLabel_Kai(QtWidgets.QLabel):
                     label.setPixmap(self.parent.RED_PIXMAP)
                 elif self.parent.game.mat[i, j] == 2:
                     label.setPixmap(self.parent.YELLOW_PIXMAP)
-
-        if connect4.check_victory(self.parent.game) != 0:
+        
+        if connect4.check_victory(self.parent.game,mode=self.parent.mode) == 1:
             msgBox = QtWidgets.QMessageBox(self.parent)
             msgBox.setIcon(QtWidgets.QMessageBox.Information)
-            msgBox.setText('Victory for player' + str(self.parent.game.turn))
-            msgBox.setWindowTitle('Victory for player' + str(self.parent.game.turn))
+            msgBox.setText('Victory for Player ' + str(self.parent.game.turn))
+            msgBox.setWindowTitle('Victory for Player ' + str(self.parent.game.turn))
             msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
             msgBox.exec()
             exit()
-            # break
+        elif self.parent.mode == "player" and connect4.check_victory(self.parent.game,mode=self.parent.mode) == 2:
+            msgBox = QtWidgets.QMessageBox(self.parent)
+            msgBox.setIcon(QtWidgets.QMessageBox.Information)
+            msgBox.setText('Victory for Player ' + str(self.parent.game.turn))
+            msgBox.setWindowTitle('Victory for Player ' + str(self.parent.game.turn))
+            msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            msgBox.exec()
+            exit()
+        elif self.parent.mode != "player" and connect4.check_victory(self.parent.game,mode=self.parent.mode) == 2:
+            msgBox = QtWidgets.QMessageBox(self.parent)
+            msgBox.setIcon(QtWidgets.QMessageBox.Information)
+            msgBox.setText('Victory for Computer')
+            msgBox.setWindowTitle('Victory for Computer')
+            msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            msgBox.exec()
+            exit()
+
+                
+                
         self.parent.game.turn ^= 3  # toggles between 1 and 2
         
 
@@ -222,14 +241,14 @@ if __name__ == "__main__":
     my_game = connect4.Game()
     
     # search for state file. If exist and not empty, load the state into game.mat
-    if os.path.exists("state.txt") and os.stat("state.txt").st_size != 0:
-        with open("state.txt", "r") as f:
-            list_state = f.read().splitlines()
-            my_game.turn = int(list_state.pop())
-            list_state = [row.split('|') for row in list_state]
-            my_game.mat = np.asarray(list_state,dtype=np.float64)
-    else:
-        my_game.mat = np.zeros((my_game.rows, my_game.cols))
+    # if os.path.exists("state.txt") and os.stat("state.txt").st_size != 0:
+    #     with open("state.txt", "r") as f:
+    #         list_state = f.read().splitlines()
+    #         my_game.turn = int(list_state.pop())
+    #         list_state = [row.split('|') for row in list_state]
+    #         my_game.mat = np.asarray(list_state,dtype=np.float64)
+    # else:
+    #     my_game.mat = np.zeros((my_game.rows, my_game.cols))
     #my_game.mat = np.zeros((my_game.rows, my_game.cols))
 
     app = QtWidgets.QApplication(sys.argv)

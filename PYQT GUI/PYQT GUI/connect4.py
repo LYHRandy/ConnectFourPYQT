@@ -65,7 +65,7 @@ def check_victory(game,mode="player"):
         return 3
 
 
-def apply_move(game, col, pop=False,mode="player"):
+def apply_move(game, col,mode="player"):
     board = game.mat.copy()
     row = board[:, col][::-1].tolist().index(0)
     board[game.rows - row - 1, col] = game.turn
@@ -85,9 +85,8 @@ def apply_move(game, col, pop=False,mode="player"):
     return board
 
 
-def check_move(game, col, pop=False):
-    can_pop = pop and game.mat[-1, col] == game.turn
-    return game.mat[0, col] == 0 or can_pop
+def check_move(game, col):
+    return game.mat[0, col] == 0
 
 def check_player_winning(game,i):
     #Check the score of player 1
@@ -102,11 +101,11 @@ def check_player_winning(game,i):
                 if chain1 == 3:
                     # your either block in front of behind so is y-1 or y+3
                     move_to_block = y+3
-                    if game.mat[x,move_to_block]!=2:
+                    if move_to_block < game.cols  and game.mat[x,move_to_block]!=2:
                         to_block = True
                         break
                     move_to_block = y-1
-                    if game.mat[x,move_to_block]!=2:
+                    if move_to_block >= 0 and game.mat[x,move_to_block]!=2:
                         to_block = True
                         break
                     move_to_block = None
@@ -116,10 +115,20 @@ def check_player_winning(game,i):
                     to_block = True
                     move_to_block = y
                     break
+                # check the diagonal-top-right n chips
+                chain3 = check_chain(game, turn, (x, y), (1, -1))
+                if chain3 == 3:
+                    print(x,y)
+                    print("chain3")
+                # check the diagonal-bottom-right n chips
+                chain4 = check_chain(game, turn, (x, y), (1, 1))
+                if chain4 == 4:
+                    print(x,y)
+                    print("chain4")
 
     return to_block, move_to_block
 
-def computer_move(game, level=3,player_move=None):
+def computer_move(game,player_move, level=3):
     best_move = randint(0, game.cols - 1)
     if level == 2:
         turn_player = game.turn
@@ -134,8 +143,17 @@ def computer_move(game, level=3,player_move=None):
                         break
                     if player_move== 0:
                         best_move = randint(player_move,player_move+1)
+                        if player_move + 1 >= game.cols:
+                            best_move = player_move
                     else:
-                        best_move = randint(player_move-1,player_move+1)
+                        min_value = player_move -1 
+                        max_value = player_move + 1
+                        best_move = randint(min_value,max_value)
+                        if player_move -1 < 0:
+                            min_value = 0
+                        if player_move + 1 >= game.cols:
+                            max_value = player_move
+                        best_move = randint(min_value,max_value)
                 game.mat = orig_board
         game.turn = turn_player
         game.mat = orig_board
@@ -157,6 +175,24 @@ def computer_move(game, level=3,player_move=None):
                 if check_victory(game) == 1:  # AI is about to lose
                     best_move = i
                     break
+                if player_move:
+                    #Check if AI has a chance to win
+                    if check_victory(game)==2:
+                        best_move = i
+                        break
+                    if player_move== 0:
+                        best_move = randint(player_move,player_move+1)
+                        if player_move + 1 >= game.cols:
+                            best_move = player_move
+                    else:
+                        min_value = player_move -1 
+                        max_value = player_move + 1
+                        best_move = randint(min_value,max_value)
+                        if player_move -1 < 0:
+                            min_value = 0
+                        if player_move + 1 >= game.cols:
+                            max_value = player_move
+                        best_move = randint(min_value,max_value)
                 game.mat = orig_board
         game.turn = turn_player
         game.mat = orig_board
@@ -194,7 +230,7 @@ def menu():
         level = input('AI Level (1/2/3): ')
     level = int(level)
     print('AI is running at level', level)
-    player_move = None
+    player_move = 0
 
     while True:
         display_board(my_game)
@@ -203,7 +239,7 @@ def menu():
             col = int(input('Enter column: '))
             player_move = col
         else:
-            col = computer_move(my_game, level=level,player_move=player_move)
+            col = computer_move(my_game,player_move=player_move, level=level)
         while not check_move(my_game, col):
             print('Invalid move.')
             col = int(input('Enter column: '))
