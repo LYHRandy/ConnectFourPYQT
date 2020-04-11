@@ -1,5 +1,5 @@
 from copy import deepcopy
-from random import randint
+from random import randint, choice
 import os
 
 import numpy as np
@@ -86,6 +86,7 @@ def apply_move(game, col,mode="player"):
 
 
 def check_move(game, col):
+    
     return game.mat[0, col] == 0
 
 def check_player_winning(game,i):
@@ -101,11 +102,11 @@ def check_player_winning(game,i):
                 if chain1 == 3:
                     # your either block in front of behind so is y-1 or y+3
                     move_to_block = y+3
-                    if move_to_block < game.cols  and game.mat[x,move_to_block]!=2:
+                    if move_to_block < game.cols and game.mat[x,move_to_block]!=2 and game.mat[x,move_to_block]!=0:
                         to_block = True
                         break
                     move_to_block = y-1
-                    if move_to_block >= 0 and game.mat[x,move_to_block]!=2:
+                    if move_to_block >= 0 and game.mat[x,move_to_block]!=2 and game.mat[x,move_to_block]!=0:
                         to_block = True
                         break
                     move_to_block = None
@@ -119,14 +120,9 @@ def check_player_winning(game,i):
                 chain3 = check_chain(game, 1, (x, y), (1, -1))
                 if chain3 == 3:
                     move_to_block = y + 1
-                    if move_to_block < game.cols and game.mat[x,move_to_block+1]!=0:
+                    if move_to_block < game.cols and game.mat[x,move_to_block]!=0:
                         to_block = True
                         break
-                # check the diagonal-bottom-right n chips
-                chain4 = check_chain(game, 1, (x, y), (1, 1))
-                if chain4 == 4:
-                    print(x,y)
-                    print("chain4")
 
     return to_block, move_to_block
 
@@ -214,6 +210,19 @@ def computer_move(game,player_move, level=3):
                     best_score = current_score
                     best_move = i
         game.mat = orig_board
+
+    available_cols = []
+    board = game.mat.copy()
+    for j in range(game.cols):
+        try:
+            row = board[:,j].tolist().index(0)
+            if game.rows-row-1 > 0:
+                available_cols.append(j)
+        except:
+            continue
+        
+    if best_move not in available_cols:
+        best_move = choice(available_cols)
 
     return best_move
 
