@@ -24,7 +24,6 @@ class QLabel_Kai(QtWidgets.QLabel):
 
     def label_clicked(self):
         if self.parent.mode == "player":
-            row = self.parent.game[:, self.col][::-1].tolist().index(0)
             if connect4.check_move(self.parent.game, self.col):
                 self.parent.game.mat = connect4.apply_move(self.parent.game, self.col)
         else:

@@ -116,12 +116,14 @@ def check_player_winning(game,i):
                     move_to_block = y
                     break
                 # check the diagonal-top-right n chips
-                chain3 = check_chain(game, turn, (x, y), (1, -1))
+                chain3 = check_chain(game, 1, (x, y), (1, -1))
                 if chain3 == 3:
-                    print(x,y)
-                    print("chain3")
+                    move_to_block = y + 1
+                    if move_to_block < game.cols and game.mat[x,move_to_block+1]!=0:
+                        to_block = True
+                        break
                 # check the diagonal-bottom-right n chips
-                chain4 = check_chain(game, turn, (x, y), (1, 1))
+                chain4 = check_chain(game, 1, (x, y), (1, 1))
                 if chain4 == 4:
                     print(x,y)
                     print("chain4")
